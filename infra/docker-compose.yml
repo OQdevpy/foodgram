@@ -1,0 +1,51 @@
+version: '3'
+
+
+services:
+  db:
+    image: postgres:13.0-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env
+    restart: always
+    container_name: db
+
+  backend:
+    build: ../backend/foodgram
+    restart: always
+    volumes:
+      - static:/app/static/
+      - media:/var/html/media/
+    depends_on:
+      - db
+    env_file:
+      - ./.env
+    container_name: backend
+
+  frontend:
+    build: ../frontend
+    volumes:
+      - ../frontend/:/app/result_build/
+    depends_on:
+      - backend
+    container_name: frontend
+
+  nginx:
+    build: ../infra/
+    ports:
+      - "9000:80"
+    volumes:
+      - ../frontend/build:/usr/share/nginx/html/
+      - ../docs/:/usr/share/nginx/html/api/docs/
+      - static:/var/html/static/
+      - media:/var/html/media/
+    depends_on:
+      - backend
+    restart: always
+    container_name: nginx
+
+volumes:
+  static:
+  media:
+  postgres_data:

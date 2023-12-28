@@ -1,0 +1,19 @@
+FROM python:3.9
+
+WORKDIR /app
+
+RUN pip install gunicorn==20.1.0
+
+COPY requirements.txt .
+
+RUN pip install -r requirements.txt --no-cache-dir 
+
+COPY . /app
+RUN python manage.py collectstatic --no-input
+
+
+
+# ENTRYPOINT [ "python" ]
+# RUN python manage.py makemigrations && python manage.py migrate
+CMD ["gunicorn", "--bind", "0.0.0.0:8007", "foodgram.wsgi"]
+# CMD ['python', 'manage.py', 'runserver', '0.0.0.0:8008']
