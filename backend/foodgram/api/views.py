@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from posts.models import (Tag, Ingredient, Recipe,
                           Favorite, ShoppingCard, Subscribe)
 from api import serializers
+from rest_framework.permissions import IsAuthenticated
 # from api.permission import AdminOrReadOnly, AuthorOrReadOnly
 
 
@@ -182,10 +183,13 @@ class SubscribeListView(ListAPIView):
     queryset = Subscribe.objects.all()
     serializer_class = serializers.SubscribeCreateSerializer
     pagination_class = None
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         print(self.request.user)
         return Subscribe.objects.filter(user=self.request.user)
     
     def list(self, request, *args, **kwargs):
-        return Response({'results':[{'email':1, 'first_name':1, 'last_name':1, 'username':1, 'removeSubscription':1, 'recipes_count':1, 'id':1, 'recipes':[]}], 'count':self.get_queryset().count()})
+        qs = self.get_queryset()
+        serializer = serializers.SubcribeList(qs, many=True)
+        return Response({'results':serializer.data, 'count':self.get_queryset().count()})

@@ -184,3 +184,26 @@ class FavoriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Favorite
         fields = ('id', 'name', 'image', 'cooking_time')
+
+
+
+
+class SubcribeList(serializers.ModelSerializer):
+    email = serializers.ReadOnlyField(source='author.email')
+    id = serializers.ReadOnlyField(source='author.id')
+    username = serializers.ReadOnlyField(source='author.username')
+    first_name = serializers.ReadOnlyField(source='author.first_name')
+    last_name = serializers.ReadOnlyField(source='author.last_name')
+    recipes_count = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField()
+
+    def get_recipes(self, obj):
+        recipes = obj.author.recipes.all()
+        return RecipeReadSerializer(recipes, many=True).data
+
+    def get_recipes_count(self, obj):
+        return obj.author.recipes.count()
+
+    class Meta:
+        model = Subscribe
+        fields = ('email', 'id', 'username', 'first_name', 'last_name', 'recipes_count', 'recipes')
