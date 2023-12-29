@@ -23,7 +23,7 @@ SECRET_KEY = '1'
 
 
 DEBUG = True
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', '0.0.0.0','backend']
+ALLOWED_HOSTS = ['*',]
 CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_ALLOW_METHODS = [
@@ -93,11 +93,14 @@ WSGI_APPLICATION = 'foodgram.wsgi.application'
 DATABASES = {
      'default': {
          'ENGINE': 'django.db.backends.postgresql',
-         'NAME': os.getenv('POSTGRES_DB', 'django'),
-         'USER': os.getenv('POSTGRES_USER', 'django'),
-         'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
-         'HOST': os.getenv('DB_HOST', ''),
-         'PORT': os.getenv('DB_PORT', 5432)
+         'NAME': 'foodgram', #os.getenv('POSTGRES_DB', 'django'),
+         'USER': 'postgres',#os.getenv('POSTGRES_USER', 'django'),
+         'PASSWORD': 'password', #os.getenv('POSTGRES_PASSWORD', ''),
+         'HOST': '159.89.106.151', #os.getenv('DB_HOST', ''),
+         'PORT':5432, #os.getenv('DB_PORT', 5432) 
+         'OPTIONS': {
+            'sslmode': 'disable',  # or 'disable' if not using SSL
+        },
      }
 
     # 'default': {
@@ -136,7 +139,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS':
         'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 2,
+    'PAGE_SIZE': 10,
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',)
 }
@@ -161,7 +164,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATICFILES_DIRS = (os.path.join(BASE_DIR, 'staticfiles'),)
  
 
 MEDIA_URL = "/media/"

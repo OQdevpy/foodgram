@@ -16,7 +16,7 @@ services:
     restart: always
     volumes:
       - static:/app/static/
-      - media:/var/html/media/
+      - media:/app/media/
     depends_on:
       - db
     env_file:

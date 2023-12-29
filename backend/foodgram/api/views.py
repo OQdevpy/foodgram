@@ -2,15 +2,17 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 
 from django_filters.rest_framework import DjangoFilterBackend
-
+from django.http import HttpResponse
+from django.db.models import Sum
 from rest_framework import viewsets, filters, status, mixins
 from rest_framework.decorators import action
 from rest_framework.generics import CreateAPIView, ListAPIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
+from .filters import IngredientFilter
 
-from posts.models import (Tag, Ingredient, Recipe,
+from posts.models import (IngredientsRecipe, Tag, Ingredient, Recipe,
                           Favorite, ShoppingCard, Subscribe)
 from api import serializers
 from rest_framework.permissions import IsAuthenticated
@@ -41,16 +43,18 @@ class IngredientsViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = serializers.IngredientSerializer
     pagination_class = PageNumberPagination
-    filter_backends = (filters.SearchFilter, )
-    # filterset_fields = ('name')
+    filter_backends = (filters.SearchFilter,DjangoFilterBackend )
+    filterset_class = IngredientFilter
     search_fields = ('^name',)
+
+    
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
-    filterset_fields = ('author', 'ingredients', 'name', 'cooking_time')
+    filterset_fields = ('author', 'ingredients', 'name', 'cooking_time', )
     # permission_classes = (AuthorOrReadOnly)
     search_fields = ('^name', )
 
@@ -60,11 +64,62 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return serializers.RecipeWriteSerializer
 
     def get_queryset(self):
-        return Recipe.objects.prefetch_related(
+        if self.action in ['retrieve', 'update', 'partial_update']:
+            return Recipe.objects.all().prefetch_related(
+                'author',
+                'ingredients',
+                'tags',
+            ).distinct()
+
+        is_in_shopping_cart = self.request.query_params.get('is_in_shopping_cart')
+        if is_in_shopping_cart:
+            return Recipe.objects.filter(carts__user=self.request.user)
+
+        tags = self.request.query_params.getlist('tags')
+        return Recipe.objects.filter(tags__slug__in=tags).prefetch_related(
             'author',
             'ingredients',
             'tags',
-        ).all()
+        ).distinct()
+
+    @action(
+        detail=False,
+        methods=('GET',),
+        permission_classes=(IsAuthenticated, ),
+        url_path='download_shopping_cart',
+    )
+    def download_shopping_cart(self, request):
+        """Отправка файла со списком покупок."""
+        ingredients = IngredientsRecipe.objects.filter(
+            recipe__carts__user=request.user
+        ).values(
+            'ingredient__name', 'ingredient__measurement_unit'
+        ).annotate(ingredient_amount=Sum('amount'))
+        shopping_list = ['Список покупок:\n']
+        for ingredient in ingredients:
+            name = ingredient['ingredient__name']
+            unit = ingredient['ingredient__measurement_unit']
+            amount = ingredient['ingredient_amount']
+            shopping_list.append(f'\n{name} - {amount}, {unit}')
+        response = HttpResponse(shopping_list, content_type='text/plain')
+        response['Content-Disposition'] = \
+            'attachment; filename="shopping_cart.txt"'
+        return response
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        data = request.data
+        data['author'] = request.user.id
+        if 'ingredients' in data:
+            ingredients = data.pop('ingredients')
+            ingredients_ids = [ingredient['id'] for ingredient in ingredients]
+            data['ingredients'] = ingredients_ids
+
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+        
 
 
 class SubcribeCreateDeleteViewSet(viewsets.ModelViewSet):
@@ -95,7 +150,6 @@ class ShoppingCartViewSet(CreateDestroyViewSet):
 
     def get_queryset(self):
         user = self.request.user.id
-        print(user)
         return ShoppingCard.objects.filter(user=user)
 
     def get_serializer_context(self):
@@ -191,5 +245,20 @@ class SubscribeListView(ListAPIView):
     
     def list(self, request, *args, **kwargs):
         qs = self.get_queryset()
-        serializer = serializers.SubcribeList(qs, many=True)
+        serializer = serializers.SubcribeList(qs, many=True,context = {'request': request})
+        return Response({'results':serializer.data, 'count':self.get_queryset().count()})
+
+class FavoriteListView(ListAPIView):
+    queryset = Favorite.objects.all()
+    serializer_class = serializers.FavoriteSerializer
+    pagination_class = None
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        fvs =Favorite.objects.filter(user=self.request.user).values_list('recipe', flat=True)
+        return Recipe.objects.filter(id__in=fvs)
+    
+    def list(self, request, *args, **kwargs):
+        qs = self.get_queryset()
+        serializer = serializers.RecipeReadSerializer(qs, many=True,context = {'request': request})
         return Response({'results':serializer.data, 'count':self.get_queryset().count()})

@@ -126,6 +126,26 @@ class Api {
       ).then(this.checkResponse)
   }
 
+  getFavourite ({ page = 1,
+    limit = 6,
+    tags}) {
+    const token = localStorage.getItem('token')
+    const authorization = token ? { 'authorization': `Token ${token}` } : {}
+    const tagsString = tags ? tags.filter(tag => tag.value).map(tag => `&tags=${tag.slug}`).join('') : ''
+    return fetch(
+      `/api/favourites/?page=${page}&limit=${limit}${tagsString}`,
+      {
+        method: 'GET',
+        headers: {
+          ...this._headers,
+          ...authorization
+        }
+      }
+    ).then(this.checkResponse)
+  }
+
+
+
   getRecipe ({
     recipe_id
   }) {

@@ -58,7 +58,7 @@ class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        verbose_name='Автор',
+        verbose_name='Автор', related_name='recipes',
     )
     ingredients = models.ManyToManyField(
         Ingredient,
@@ -141,7 +141,7 @@ class IngredientsRecipe(models.Model):
         verbose_name_plural = 'Ингредиенты в рецепте'
 
     def __str__(self):
-        return self.ingredient
+        return self.ingredient.name
 
 
 class TagRecipe(models.Model):
@@ -162,6 +162,7 @@ class ShoppingCard(models.Model):
         Recipe,
         on_delete=models.CASCADE,
         verbose_name='Рецепт',
+        related_name='carts',
 
     )
     user = models.ForeignKey(

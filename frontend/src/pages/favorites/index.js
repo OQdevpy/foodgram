@@ -20,9 +20,9 @@ const Favorites = ({ updateOrders }) => {
     handleAddToCart
   } = useRecipes()
   
-  const getRecipes = ({ page = 1, tags }) => {
+  const getFavourite = ({ page = 1, tags }) => {
     api
-      .getRecipes({ page, is_favorited: Number(true), tags })
+      .getFavourite({ page,  tags })
       .then(res => {
         const { results, count } = res
         setRecipes(results)
@@ -31,7 +31,7 @@ const Favorites = ({ updateOrders }) => {
   }
 
   useEffect(_ => {
-    getRecipes({ page: recipesPage, tags: tagsValue })
+    getFavourite({ page: recipesPage, tags: tagsValue })
   }, [recipesPage, tagsValue])
 
   useEffect(_ => {

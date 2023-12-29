@@ -5,7 +5,7 @@ from django.urls import include, path
 from api.views import (SubscribeListView, TagsViewSet, IngredientsViewSet,
                        RecipeViewSet, FavoriteViewSet,
                        ShoppingCartViewSet,
-                       SubcribeCreateDeleteViewSet)
+                       SubcribeCreateDeleteViewSet,FavoriteListView)
 from users.views import UserViewSet
 
 
@@ -28,5 +28,6 @@ router.register(r'recipe/(?P<user_id>\d+)/recipe',
 
 urlpatterns = [
     path('subscriptions/', SubscribeListView.as_view(), name='subscribe'),
+    path('favourites/', FavoriteListView.as_view(), name='favourites'),
     path('', include(router.urls)),
 ]

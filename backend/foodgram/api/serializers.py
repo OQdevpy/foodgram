@@ -89,11 +89,15 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     )
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
+
+    def get_image(self, obj):
+        return f"http://159.89.106.151:9000{obj.image.url}"
 
     class Meta:
         fields = ('id', 'author', 'ingredients', 'tags',
                   'name', 'text', 'cooking_time', 'is_favorited',
-                  'is_in_shopping_cart')
+                  'is_in_shopping_cart','image')
         model = Recipe
 
     def get_is_favorited(self, obj):
@@ -131,9 +135,10 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         recipe.image.save(image_data.name, ContentFile(
                           base64.b64decode(image_content)))
         return recipe
-
+    
+  
     def update(self, instance, validated_data):
-        ingredients_data = validated_data.pop('ingredients')
+        ingredients_data =  validated_data.pop('ingredients')
         tags_data = validated_data.pop('tags')
         instance.name = validated_data.get('name', instance.name)
         instance.text = validated_data.get('text', instance.text)
@@ -199,7 +204,7 @@ class SubcribeList(serializers.ModelSerializer):
 
     def get_recipes(self, obj):
         recipes = obj.author.recipes.all()
-        return RecipeReadSerializer(recipes, many=True).data
+        return RecipeReadSerializer(recipes, many=True,context = {'request':self.context['request']}).data
 
     def get_recipes_count(self, obj):
         return obj.author.recipes.count()

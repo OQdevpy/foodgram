@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 from django.utils.timezone import now
 from posts.models import Subscribe
 
@@ -8,6 +9,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny  # IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 # from users import serializers
 # import actions
@@ -25,6 +27,23 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         pass
+
+    @action(detail=True, methods=["POST", "DELETE"],permission_classes = (IsAuthenticated,))
+    def subscribe(self, request, pk=None):
+        author = self.get_object()
+        user = request.user
+        print(user,author)
+        if request.method == "POST":
+            
+            qs,_ = Subscribe.objects.get_or_create(user=user, author=author)
+            serializer = SubscribeCreateSerializer(qs,many=False)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        elif request.method == "DELETE":
+            subscribe = get_object_or_404(
+                Subscribe, user=user, author=author
+            )
+            subscribe.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 
