@@ -92,6 +92,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
 
     def get_image(self, obj):
+        
         return f"http://localhost:9000{obj.image.url}"
 
     class Meta:
