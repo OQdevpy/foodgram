@@ -12,7 +12,7 @@ from posts.models import (Tag, Ingredient, Recipe, IngredientsRecipe,
                           Favorite, ShoppingCard, Subscribe)
 from posts import validators
 
-
+from .utils import create_ingredients
 User = get_user_model()
 
 
@@ -92,7 +92,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
 
     def get_image(self, obj):
-        
+
         return f"http://localhost:9000{obj.image.url}"
 
     class Meta:
@@ -135,6 +135,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         recipe.ingredients.set(ingredients_data)
         recipe.image.save(image_data.name, ContentFile(
                           base64.b64decode(image_content)))
+        create_ingredients(self.context['ingredients'], recipe)
         return recipe
     
   
@@ -148,7 +149,9 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         instance.image = validated_data.get('image', instance.image)
         instance.tags.set(tags_data)
         instance.ingredients.set(ingredients_data)
+        IngredientsRecipe.objects.filter(recipe=instance).delete()
         instance.save()
+        create_ingredients(self.context['ingredients'], instance)
         return instance
 
 
