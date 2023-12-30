@@ -18,6 +18,7 @@ from api import serializers
 from rest_framework.permissions import IsAuthenticated
 # from api.permission import AdminOrReadOnly, AuthorOrReadOnly
 
+from api.utils import (create_model_instance, delete_model_instance)
 
 User = get_user_model()
 
@@ -106,17 +107,52 @@ class RecipeViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = \
             'attachment; filename="shopping_cart.txt"'
         return response
+    
+    @action(
+        detail=True,
+        methods=['post', 'delete'],
+        permission_classes=[IsAuthenticated, ]
+    )
+    def shopping_cart(self, request, pk):
+        """Работа со списком покупок.
+        Удаление/добавление в список покупок.
+        """
+        recipe = get_object_or_404(Recipe, id=pk)
+        if request.method == 'POST':
+            data = request.data
+            data['recipe'] = recipe.id
+            data['user'] = request.user.id
+            card = ShoppingCard.objects.filter(user=request.user,
+                                               recipe=recipe)
+            if card.exists():
+                return Response({'errors': 'Рецепт уже в корзине'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            card = ShoppingCard.objects.create(recipe=recipe,user = request.user)
+            serializer = serializers.ShoppingCartSerializer(card)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        if request.method == 'DELETE':
+            error_message = 'У вас нет этого рецепта в списке покупок'
+            card = ShoppingCard.objects.filter(user=request.user,
+                                               recipe=recipe)
+            if not card.exists():
+                return Response({'errors': error_message},
+                                status=status.HTTP_400_BAD_REQUEST)
+            card.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+            
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         data = request.data
         data['author'] = request.user.id
+        ingredientss = data.get('ingredients')
         if 'ingredients' in data:
             ingredients = data.pop('ingredients')
             ingredients_ids = [ingredient['id'] for ingredient in ingredients]
             data['ingredients'] = ingredients_ids
 
-        serializer = self.get_serializer(instance, data=request.data)
+        serializer = self.get_serializer(instance, data=request.data,context = {'ingredients':ingredientss, 'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
@@ -124,12 +160,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         data = request.data
         data['author'] = request.user.id
+        ingredientss = data.get('ingredients')
         if 'ingredients' in data:
             ingredients = data.pop('ingredients')
             ingredients_ids = [ingredient['id'] for ingredient in ingredients]
             data['ingredients'] = ingredients_ids
 
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=request.data,context = {'ingredients':ingredientss, 'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
