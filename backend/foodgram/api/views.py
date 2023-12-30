@@ -42,10 +42,11 @@ class IngredientsViewSet(viewsets.ModelViewSet):
     # permission_classes = (AdminOrReadOnly,)
     queryset = Ingredient.objects.all()
     serializer_class = serializers.IngredientSerializer
-    pagination_class = PageNumberPagination
+    pagination_class = None
     filter_backends = (filters.SearchFilter,DjangoFilterBackend )
     filterset_class = IngredientFilter
     search_fields = ('^name',)
+
 
     
 
@@ -118,6 +119,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        data['author'] = request.user.id
+        if 'ingredients' in data:
+            ingredients = data.pop('ingredients')
+            ingredients_ids = [ingredient['id'] for ingredient in ingredients]
+            data['ingredients'] = ingredients_ids
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
         return Response(serializer.data)
         
 

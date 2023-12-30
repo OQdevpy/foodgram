@@ -160,7 +160,7 @@ const RecipeCreate = ({ onEdit }) => {
               {ingredientValue.measurement_unit !== '' && <div className={styles.measurementUnit}>{ingredientValue.measurement_unit}</div>}
             </div>
             {showIngredients && ingredients.length > 0 && <IngredientsSearch
-              ingredients={ingredients}
+              ingredient={ingredients}
               onClick={({ id, name, measurement_unit }) => {
                 handleIngredientAutofill({ id, name, measurement_unit })
                 setIngredients([])

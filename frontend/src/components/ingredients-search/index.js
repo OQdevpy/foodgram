@@ -1,8 +1,9 @@
 import styles from './styles.module.css'
 
 const IngredientsSearch = ({ ingredient, onClick }) => {
+  console.log(ingredient)
   return <div className={styles.container}>
-    {ingredient.map(({ name, id, measurement_unit }) => {
+    {ingredient?.map(({ name, id, measurement_unit }) => {
       return <div key={id} onClick={_ => onClick({ id, name, measurement_unit })}>{name}</div>
     })}
   </div>

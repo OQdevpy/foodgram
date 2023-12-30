@@ -53,7 +53,7 @@ class TagSerializer(serializers.ModelSerializer):
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
-        fields = fields = '__all__'
+        fields =  '__all__'
 
 
 class IngredientWriteSerializer(serializers.ModelSerializer):
@@ -92,7 +92,8 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
 
     def get_image(self, obj):
-        return f"http://159.89.106.151:9000{obj.image.url}"
+        
+        return f"http://localhost:9000{obj.image.url}"
 
     class Meta:
         fields = ('id', 'author', 'ingredients', 'tags',
