@@ -118,7 +118,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
-    image = Base64ImageField()
+    image = Base64ImageField(required=False)
 
     class Meta:
         fields = ('id', 'author', 'ingredients', 'tags',
@@ -133,8 +133,8 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_data)
         recipe.ingredients.set(ingredients_data)
-        recipe.image.save(image_data.name, ContentFile(
-                          base64.b64decode(image_content)))
+        recipe.image.save(f'{recipe.name}.jpg',
+                          ContentFile(image_content), save=True)
         create_ingredients(self.context['ingredients'], recipe)
         return recipe
     
@@ -152,14 +152,16 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         ings = IngredientsRecipe.objects.filter(recipe=instance)
         instance.save()
         for i in self.context['ingredients']:
-            if i['id'] in ings.values_list('ingredient__id', flat=True):
-                ingredient = get_object_or_404(Ingredient, id=i['id'])
-                
-            else:
-                ingredient = get_object_or_404(Ingredient, id=i['id'])
-                IngredientsRecipe.objects.create(recipe=instance,
-                                                 ingredient=ingredient,
-                                                 amount=i['amount'])
+            amount = i.get('amount')
+            if  amount is not None :
+                if i['id'] in ings.values_list('ingredient_id', flat=True):
+                    IngredientsRecipe.objects.filter(
+                        recipe=instance, ingredient_id=i['id']).update(
+                        amount=amount)
+                else:
+                    IngredientsRecipe.objects.create(
+                        recipe=instance, ingredient_id=i['id'], amount=amount)
+
         return instance
 
 
