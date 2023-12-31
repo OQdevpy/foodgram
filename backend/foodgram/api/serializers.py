@@ -72,7 +72,7 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = IngredientsRecipe
-        fields = ('id', 'name', 'measurement_unit')
+        fields = ('id', 'name', 'measurement_unit',)
 
 
 class RecipeReadSerializer(serializers.ModelSerializer):
@@ -149,9 +149,17 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         instance.image = validated_data.get('image', instance.image)
         instance.tags.set(tags_data)
         instance.ingredients.set(ingredients_data)
-        IngredientsRecipe.objects.filter(recipe=instance).delete()
+        ings = IngredientsRecipe.objects.filter(recipe=instance)
         instance.save()
-        create_ingredients(self.context['ingredients'], instance)
+        for i in self.context['ingredients']:
+            if i['id'] in ings.values_list('ingredient__id', flat=True):
+                ingredient = get_object_or_404(Ingredient, id=i['id'])
+                
+            else:
+                ingredient = get_object_or_404(Ingredient, id=i['id'])
+                IngredientsRecipe.objects.create(recipe=instance,
+                                                 ingredient=ingredient,
+                                                 amount=i['amount'])
         return instance
 
 
