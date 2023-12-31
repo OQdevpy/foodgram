@@ -66,7 +66,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return serializers.RecipeWriteSerializer
 
     def get_queryset(self):
-        if self.action in ['retrieve', 'update', 'partial_update']:
+        if self.action in ['retrieve', 'update', 'partial_update', 'destroy']:
             return Recipe.objects.all().prefetch_related(
                 'author',
                 'ingredients',
